@@ -19,7 +19,10 @@ public class ProceduralTreeRender : MonoBehaviour {
     {
         mat.SetPass(0);
         mat.SetBuffer("_TreeBuffer", tree.TreeDataBuffer);
+        mat.SetBuffer("_IndexBuffer", tree.TreeActiveIndexBuffer);
         mat.SetInt("_TreeCount", tree.TreeDataIndex);
+        mat.SetInt("_IndexCount", tree.TreeActiveIndex);
+
         Graphics.DrawProcedural(MeshTopology.Points, tree.TreeDataIndex, 0);
     }
 }

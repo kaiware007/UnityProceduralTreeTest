@@ -57,11 +57,10 @@ public class ProceduralTree : MonoBehaviour {
     #region define
     public struct TreeData
     {
-        public Vector3 forward_position;    // 先端の座標
-        public Vector3 back_position;       // 根本の座標
-        public Vector3 next_position;       // 次のnodeの座標
-        public float forward_radius;
-        public float back_radius;
+        public Vector3 position;    // 先端の座標
+        public int backID;       // 根本の座標
+        public int nextID;       // 次のnodeの座標
+        public float radius;
     }
     #endregion
 
@@ -80,7 +79,9 @@ public class ProceduralTree : MonoBehaviour {
     public bool isDrawGizmos = false;
 
     public ComputeBuffer TreeDataBuffer { get { return treeBuffer; } }
+    public ComputeBuffer TreeActiveIndexBuffer { get { return treeActiveIndexBuffer; } }
     public int TreeDataIndex { get { return treeDataIndex; } }
+    public int TreeActiveIndex { get { return treeActiveIndex; } }
     #endregion
 
     #region private
@@ -96,8 +97,11 @@ public class ProceduralTree : MonoBehaviour {
     private int mainDivideCount = 0;    // メイン幹分裂回数
 
     private ComputeBuffer treeBuffer;
+    private ComputeBuffer treeActiveIndexBuffer;
     private TreeData[] treeDataArray;
+    private int[] treeActiveIndexArray;
     private int treeDataIndex;
+    private int treeActiveIndex;
     #endregion
 
     void Initialize()
@@ -113,8 +117,11 @@ public class ProceduralTree : MonoBehaviour {
         }
 
         treeBuffer = new ComputeBuffer(nodeMax, System.Runtime.InteropServices.Marshal.SizeOf(typeof(TreeData)));
+        treeActiveIndexBuffer = new ComputeBuffer(nodeMax, System.Runtime.InteropServices.Marshal.SizeOf(typeof(int)));
         treeDataArray = new TreeData[nodeMax];
+        treeActiveIndexArray = new int[nodeMax];
         treeDataIndex = 0;
+        treeActiveIndex = 0;
     }
 
     float GetGrowthSpeed()
@@ -122,71 +129,76 @@ public class ProceduralTree : MonoBehaviour {
         return growthSpeed + Random.Range(growthSpeedRandomRange.x, growthSpeedRandomRange.y);
     }
 
-    TreeNodeClass CreateNode(Vector3 pos, Quaternion rotation, float speed, float lt, float radius)
+    TreeNodeClass CreateNode(Vector3 pos, Quaternion rotation, float speed, float lt, int divCount, float radius, TreeNodeClass parent=null)
     {
         TreeNodeClass node = poolList.Pop();
-        node.position = pos;
-        node.rotation = rotation;
-        node.speed = speed;
-        node.lifeTime = lt;
-        node.radius = radius;
-        selectNode = node;
-        activeList.Add(node);
-        return node;
-    }
-
-    TreeNodeClass AddNodeSelect(Quaternion rotation, float speed, float lt)
-    {
-        if((selectNode != null)&&(poolList.Count > 0))
+        if (node != null)
         {
-            TreeNodeClass node = poolList.Pop();
-            //node.position = pos;
-            node.rotation = rotation;
-            node.speed = speed;
-            node.lifeTime = lt;
-
-            if (!selectNode.AddNext(node))
-            {
-                // 追加できなかった場合はpoolに戻す
-                poolList.Push(node);
-                return null;
-            }
-
-            // 成功
-            activeList.Add(node);
-            return node;
-        }
-
-        return null;
-    }
-
-    TreeNodeClass AddNode(TreeNodeClass parent, Quaternion rotation, float speed, float lt, int divCount, float radius)
-    {
-        if ((selectNode != null) && (poolList.Count > 0))
-        {
-            TreeNodeClass node = poolList.Pop();
-            //node.position = pos;
+            node.back = parent;
+            node.position = pos;
             node.rotation = rotation;
             node.speed = speed;
             node.lifeTime = lt;
             node.divideCount = divCount;
             node.radius = radius;
-
-            if (!parent.AddNext(node))
-            {
-                // 追加できなかった場合はpoolに戻す
-                poolList.Push(node);
-                return null;
-            }
-
-            // 成功
+            selectNode = node;
             activeList.Add(node);
-            return node;
         }
-
-        return null;
-
+        return node;
     }
+
+    //TreeNodeClass AddNodeSelect(Quaternion rotation, float speed, float lt)
+    //{
+    //    if((selectNode != null)&&(poolList.Count > 0))
+    //    {
+    //        TreeNodeClass node = poolList.Pop();
+    //        //node.position = pos;
+    //        node.rotation = rotation;
+    //        node.speed = speed;
+    //        node.lifeTime = lt;
+
+    //        if (!selectNode.AddNext(node))
+    //        {
+    //            // 追加できなかった場合はpoolに戻す
+    //            poolList.Push(node);
+    //            return null;
+    //        }
+
+    //        // 成功
+    //        activeList.Add(node);
+    //        return node;
+    //    }
+
+    //    return null;
+    //}
+
+    //TreeNodeClass AddNode(TreeNodeClass parent, Quaternion rotation, float speed, float lt, int divCount, float radius)
+    //{
+    //    if ((selectNode != null) && (poolList.Count > 0))
+    //    {
+    //        TreeNodeClass node = poolList.Pop();
+    //        //node.position = pos;
+    //        node.rotation = rotation;
+    //        node.speed = speed;
+    //        node.lifeTime = lt;
+    //        node.divideCount = divCount;
+    //        node.radius = radius;
+
+    //        if (!parent.AddNext(node))
+    //        {
+    //            // 追加できなかった場合はpoolに戻す
+    //            poolList.Push(node);
+    //            return null;
+    //        }
+
+    //        // 成功
+    //        activeList.Add(node);
+    //        return node;
+    //    }
+
+    //    return null;
+
+    //}
 
     void AddTreeData(TreeNodeClass node)
     {
@@ -194,12 +206,20 @@ public class ProceduralTree : MonoBehaviour {
         {
             //treeDataArray[treeDataIndex].forwardID = node.index;
             //treeDataArray[treeDataIndex].backID= (node.back != null) ? node.back.index: -1;
-            treeDataArray[treeDataIndex].forward_position = node.position;    // 先端の座標
-            treeDataArray[treeDataIndex].back_position = (node.back != null) ? node.back.position : Vector3.zero;       // 根本の座標
-            treeDataArray[treeDataIndex].next_position = (node.nextList.Count > 0) ? node.nextList[0].position : Vector3.zero;       // 次のnodeの座標
-            treeDataArray[treeDataIndex].forward_radius = node.radius;
-            treeDataArray[treeDataIndex].back_radius = (node.back != null) ? node.back.radius : 0;
+            treeDataArray[treeDataIndex].position = node.position;    // 先端の座標
+            treeDataArray[treeDataIndex].backID = (node.back != null) ? node.back.index : 0;
+            treeDataArray[treeDataIndex].nextID = (node.nextList.Count > 0) ? node.nextList[0].index : 0;
+            treeDataArray[treeDataIndex].radius = node.radius;
             treeDataIndex++;
+        }
+    }
+
+    void AddActiveIndex(int index)
+    {
+        if(treeActiveIndex < nodeMax)
+        {
+            treeActiveIndexArray[treeActiveIndex] = index;
+            treeActiveIndex++;
         }
     }
 
@@ -210,6 +230,7 @@ public class ProceduralTree : MonoBehaviour {
         endList.Clear();
 
         treeDataIndex = 0;
+        treeActiveIndex = 0;
 
         // 更新
         for (int i = 0; i < activeList.Count; i++)
@@ -222,10 +243,17 @@ public class ProceduralTree : MonoBehaviour {
                 }
             }
 
-            AddTreeData(activeList[i]);
+            //AddTreeData(activeList[i]);
+            AddActiveIndex(activeList[i].index);
+        }
+
+        for(int i = 0; i < nodeMax; i++)
+        {
+            AddTreeData(nodeArray[i]);
         }
 
         treeBuffer.SetData(treeDataArray);
+        treeActiveIndexBuffer.SetData(treeActiveIndexArray);
 
         // 分裂するかチェック
         for(int i = 0; i < endList.Count; i++)
@@ -244,10 +272,12 @@ public class ProceduralTree : MonoBehaviour {
                     // 脇道分裂
                     for (int j = 0; j < num; j++)
                     {
-                        AddNode(endList[i], endList[i].rotation * Quaternion.AngleAxis(ang, Vector3.forward) * Quaternion.AngleAxis(Random.Range(-90, -45), Vector3.left), GetGrowthSpeed(), lifeTime, endList[i].divideCount - 1, defaultRadius);
+                        //AddNode(endList[i], endList[i].rotation * Quaternion.AngleAxis(ang, Vector3.forward) * Quaternion.AngleAxis(Random.Range(-90, -45), Vector3.left), GetGrowthSpeed(), lifeTime, endList[i].divideCount - 1, defaultRadius);
+                        TreeNodeClass node = CreateNode(endList[i].position, endList[i].rotation * Quaternion.AngleAxis(ang, Vector3.forward) * Quaternion.AngleAxis(Random.Range(-90, -45), Vector3.left), GetGrowthSpeed(), lifeTime, endList[i].divideCount - 1, defaultRadius, endList[i]);
                         ang += 120f + Random.Range(-10, 10);
                     }
 
+                    // メイン幹の角度
                     if (mainDivideCount % mainBranchAdjustIntervalCount > 0)
                     {
                         // ランダム
@@ -272,7 +302,8 @@ public class ProceduralTree : MonoBehaviour {
                     float minus = 1;
                     for (int j = 0; j < num; j++)
                     {
-                        AddNode(endList[i], endList[i].rotation * Quaternion.AngleAxis(Random.Range(45, 60) * minus, Vector3.up), GetGrowthSpeed() / 2f, lifeTime, endList[i].divideCount - 1, defaultRadius);
+                        //AddNode(endList[i], endList[i].rotation * Quaternion.AngleAxis(Random.Range(45, 60) * minus, Vector3.up), GetGrowthSpeed() / 2f, lifeTime, endList[i].divideCount - 1, defaultRadius);
+                        CreateNode(endList[i].position, endList[i].rotation * Quaternion.AngleAxis(Random.Range(45, 60) * minus, Vector3.up), GetGrowthSpeed() / 2f, lifeTime, endList[i].divideCount - 1, defaultRadius, endList[i]);
                         minus *= -1;
                     }
 
@@ -280,8 +311,11 @@ public class ProceduralTree : MonoBehaviour {
                     q = endList[i].rotation * Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Quaternion.AngleAxis(Random.Range(-20, 20), Vector3.left);
                 }
 
-                selectNode = AddNode(endList[i], q, GetGrowthSpeed(), lifeTime, (endList[i].isMainNode) ? maxDivideCount : endList[i].divideCount - 1, defaultRadius);
+                // メイン幹
+                //selectNode = AddNode(endList[i], q, GetGrowthSpeed(), lifeTime, (endList[i].isMainNode) ? maxDivideCount : endList[i].divideCount - 1, defaultRadius);
+                selectNode = CreateNode(endList[i].position, q, GetGrowthSpeed(), lifeTime, (endList[i].isMainNode) ? maxDivideCount : endList[i].divideCount - 1, defaultRadius, endList[i]);
                 selectNode.isMainNode = endList[i].isMainNode;
+                endList[i].AddNext(selectNode);
             }
             //activeList.Remove(endList[i]);
         }
@@ -291,14 +325,16 @@ public class ProceduralTree : MonoBehaviour {
 	void Start () {
         Initialize();
 
-        TreeNodeClass node = CreateNode(frontPosition, Quaternion.Euler(-90,0,0), 0, 0, defaultRadius);
-        node.isMainNode = true; // メイン幹
-        node = AddNode(node, Quaternion.Euler(-90, 0, 0), GetGrowthSpeed(), lifeTime, maxDivideCount, defaultRadius);
-        node.isMainNode = true; // メイン幹
+        TreeNodeClass node1 = CreateNode(frontPosition, Quaternion.Euler(-90,0,0), 0, 0, maxDivideCount, defaultRadius);
+        node1.isMainNode = true; // メイン幹
+        TreeNodeClass node2 = CreateNode(node1.position, Quaternion.Euler(-90, 0, 0), GetGrowthSpeed(), lifeTime, maxDivideCount, defaultRadius);
+        //node = AddNode(node, Quaternion.Euler(-90, 0, 0), GetGrowthSpeed(), lifeTime, maxDivideCount, defaultRadius);
+        node2.isMainNode = true; // メイン幹
+        node1.AddNext(node2);
     }
-	
-	// Update is called once per frame
-	void Update () {
+
+    // Update is called once per frame
+    void Update () {
         //// 上に伸びる
         //if (Input.GetKeyDown(KeyCode.A))
         //{

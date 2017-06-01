@@ -43,7 +43,9 @@
 			float4 _MainTex_ST;
 			
 			StructuredBuffer<TreeData> _TreeBuffer;
+			StructuredBuffer<int> _IndexBuffer;
 			int _TreeCount;
+			int _IndexCount;
 
 			v2g vert (uint id : SV_VertexID)
 			{
@@ -51,11 +53,13 @@
 
 				v2g o = (v2g)0;
 				
-				o.forward_pos = float4(_TreeBuffer[id].forward_pos,1);
-				o.back_pos = float4(_TreeBuffer[id].back_pos,1);
-				o.next_pos = float4(_TreeBuffer[id].next_pos,1);
-				o.forward_radius = _TreeBuffer[id].next_pos;
-				o.back_radius = _TreeBuffer[id].next_pos;
+				int idx = _IndexBuffer[id];
+
+				o.forward_pos = float4(_TreeBuffer[idx].position,1);
+				o.back_pos = (_TreeBuffer[idx].backID >= 0) ? float4(_TreeBuffer[_TreeBuffer[idx].backID].position,1) : o.forward_pos;
+				o.next_pos = (_TreeBuffer[idx].nextID >= 0) ? float4(_TreeBuffer[_TreeBuffer[idx].nextID].position,1) : o.forward_pos;
+				o.forward_radius = _TreeBuffer[idx].radius;
+				o.back_radius = (_TreeBuffer[idx].backID >= 0) ? _TreeBuffer[_TreeBuffer[idx].backID].radius : o.forward_radius;
 
 				//o.vertex = UnityObjectToClipPos(v.vertex);
 				//o.uv = TRANSFORM_TEX(v.uv, _MainTex);

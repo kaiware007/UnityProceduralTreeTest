@@ -7,6 +7,8 @@ public class ProceduralTreeRender : MonoBehaviour {
     public const int MESH_VERTEX_MAX = 65534;
 
     public Material mat;
+    //[Range(3,16)]
+    //public int divideCount = 4; // 面の分割数
 
     private ProceduralTree tree;
 
@@ -22,6 +24,7 @@ public class ProceduralTreeRender : MonoBehaviour {
         mat.SetBuffer("_IndexBuffer", tree.TreeActiveIndexBuffer);
         mat.SetInt("_TreeCount", tree.TreeDataIndex);
         mat.SetInt("_IndexCount", tree.TreeActiveIndex);
+        //mat.SetInt("_DivideCount", divideCount);
 
         Graphics.DrawProcedural(MeshTopology.Points, tree.TreeDataIndex, 0);
     }

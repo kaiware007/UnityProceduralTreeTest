@@ -8,6 +8,7 @@ struct TreeData
 	int backID;			// 前のNodeのindex
 	int nextID;			// 次のnodeのindex
 	float radius;
+	float startRadius;	// 根本の太さ
 	float growthLength;  // 伸びた距離(累計)
 	float startLength;
 };

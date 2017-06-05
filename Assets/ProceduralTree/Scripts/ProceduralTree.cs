@@ -325,7 +325,7 @@ public class ProceduralTree : MonoBehaviour {
                     {
                         if (divisionPer > Random.value)
                         {
-                            CreateNode(endList[i].position, endList[i].rotation * Quaternion.AngleAxis(Random.Range(45, 60) * minus, Vector3.up), GetGrowthSpeed() * branchGrowSpeedPower, lifeTime, endList[i].divideCount - 1, radius, radius * 0.75f, null, growthBranchDelay, defaultDeleteTime);
+                            CreateNode(endList[i].position, endList[i].rotation * Quaternion.AngleAxis(Random.Range(45, 60) * minus, Vector3.up), GetGrowthSpeed() * branchGrowSpeedPower, lifeTime, endList[i].divideCount - 1, endList[i].radius, radius, null, growthBranchDelay, defaultDeleteTime);
                             minus *= -1;
                         }
                     }
@@ -335,7 +335,7 @@ public class ProceduralTree : MonoBehaviour {
                 }
 
                 // メイン幹
-                float startRadius = (endList[i].isMainNode) ? defaultRadius : endList[i].radius * branchDownScale;
+                float startRadius = (endList[i].isMainNode) ? defaultRadius : endList[i].radius;
                 float targetRadius = (endList[i].isMainNode) ? defaultRadius : startRadius * 0.5f;
 
                 float growSpeed = GetGrowthSpeed();

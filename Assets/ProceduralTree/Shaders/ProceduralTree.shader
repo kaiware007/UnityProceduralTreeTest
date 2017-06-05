@@ -155,7 +155,7 @@
 				// １つめのtriangle
 				// 0
 				o.position = lt_proj;
-				o.uv = float2(0, (input[0].growthLength.x + input[0].growthLength.y) * _uvScale);
+				o.uv = float2(0.5, (input[0].growthLength.x + input[0].growthLength.y) * _uvScale);
 				o.worldPos = lt_world;
 				o.worldNormal = normal1;
 				o.sh = sh1;
@@ -163,7 +163,7 @@
 
 				// 1
 				o.position = lb_proj;
-				o.uv = float2(0, (input[0].growthLength.x) * _uvScale);
+				o.uv = float2(0.5, (input[0].growthLength.x) * _uvScale);
 				o.worldPos = lb_world;
 				o.worldNormal = normal1;
 				o.sh = sh1;
@@ -171,7 +171,7 @@
 
 				// 2
 				o.position = rt_proj;
-				o.uv = float2(0.5, (input[0].growthLength.x + input[0].growthLength.y) * _uvScale);
+				o.uv = float2(0, (input[0].growthLength.x + input[0].growthLength.y) * _uvScale);
 				o.worldPos = rt_world;
 				o.worldNormal = normal1;
 				o.sh = sh1;
@@ -182,7 +182,7 @@
 				// 2つめのtriangle
 				// 3
 				o.position = lb_proj;
-				o.uv = float2(0, (input[0].growthLength.x) * _uvScale);
+				o.uv = float2(0.5, (input[0].growthLength.x) * _uvScale);
 				o.worldPos = lb_world;
 				o.worldNormal = normal2;
 				o.sh = sh2;
@@ -190,7 +190,7 @@
 
 				// 4
 				o.position = rb_proj;
-				o.uv = float2(0.5, (input[0].growthLength.x) * _uvScale);
+				o.uv = float2(0, (input[0].growthLength.x) * _uvScale);
 				o.worldPos = rb_world;
 				o.worldNormal = normal2;
 				o.sh = sh2;
@@ -198,7 +198,7 @@
 
 				// 5
 				o.position = rt_proj;
-				o.uv = float2(0.5, (input[0].growthLength.x + input[0].growthLength.y) * _uvScale);
+				o.uv = float2(0, (input[0].growthLength.x + input[0].growthLength.y) * _uvScale);
 				o.worldPos = rt_world;
 				o.worldNormal = normal2;
 				o.sh = sh2;
